@@ -1,0 +1,110 @@
+version: "3.9"
+
+services:
+  mailhog:
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-mailhog
+    image: mailhog/mailhog:latest
+    ports:
+      - "${MAILHOG_PORT:-8025}:8025"
+
+  memcached:
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-memcached
+    image: memcached:${MEMCACHED_VERSION:-1.6-alpine}
+
+  mysql:
+    command: [
+      '--default_authentication_plugin=mysql_native_password',
+      '--character-set-server=${MYSQL_ENCODING:-utf8mb4}',
+      '--collation-server=${MYSQL_COLLATION:-utf8mb4_unicode_ci}'
+    ]
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-docker}
+      - MYSQL_USER=${MYSQL_USER:-docker}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-password}
+    image: mysql:${MYSQL_VERSION:-8.0}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysqldata:/var/lib/mysql:delegated
+
+  nginx:
+    build:
+      args:
+        NGINX_VERSION: ${NGINX_VERSION:-1.19-alpine}
+        SITE_NAME: ${SITE_NAME:-docker.test}
+        SITE_IS_SECURE: ${SITE_IS_SECURE:-true}
+        SITE_TYPE: ${SITE_TYPE:-default}
+      context: ./docker/nginx
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-nginx
+    depends_on:
+      - php
+    ports:
+      - "${NGINX_PORT_UNSECURE:-80}:80"
+      - "${NGINX_PORT_SECURE:-443}:443"
+    volumes:
+      - ./www:/srv/www:delegated
+    working_dir: /srv/www
+
+  nodejs:
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
+    image: node:${NODEJS_VERSION:-15.5-alpine}
+    volumes:
+      - ./www:/srv/www:delegated
+    working_dir: /srv/www
+
+  php:
+    build:
+      args:
+        PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
+        COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.8}
+        MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
+      context: ./docker/php
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-php
+    depends_on:
+      - mailhog
+      - mysql
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
+    volumes:
+      - ./www:/srv/www:delegated
+    working_dir: /srv/www
+
+  redis:
+    command: [
+      'redis-server',
+      '--appendonly',
+      'yes',
+    ]
+    container_name: ${COMPOSE_PROJECT_NAME:-docker}-redis
+    image: redis:${REDIS_VERSION:-6.0-alpine}
+    volumes:
+      - redisdata:/data
+
+  #scheduler:
+  #  container_name: ${COMPOSE_PROJECT_NAME:-docker}-scheduler
+  #  depends_on:
+  #    - php
+  #  image: mcuadros/ofelia:latest
+  #  volumes:
+  #    - /var/run/docker.sock:/var/run/docker.sock:ro
+  #    - ./docker/scheduler/config.ini:/etc/ofelia/config.ini
+
+  #worker:
+  #  build:
+  #    args:
+  #      PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
+  #      COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.8}
+  #      MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
+  #    context: ./docker/php
+  #    target: worker
+  #  container_name: ${COMPOSE_PROJECT_NAME:-docker}-worker
+  #  depends_on:
+  #    - php
+  #  volumes:
+  #    - ./www:/srv/www:delegated
+  #  working_dir: /srv/www
+
+volumes:
+  mysqldata:
+  redisdata:
