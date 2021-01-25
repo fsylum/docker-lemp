@@ -28,6 +28,7 @@ services:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysqldata:/var/lib/mysql:delegated
+      - ./www:/srv/www:delegated
 
   nginx:
     build:
