@@ -62,6 +62,7 @@ services:
         COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.8}
         MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
       context: ./docker/php
+      target: php
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-php
     depends_on:
       - mailhog

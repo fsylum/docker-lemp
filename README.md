@@ -90,4 +90,3 @@ You'll also need to comment out the last section in the file `docker/php/Dockerf
 
 #CMD ["php", "/srv/www/artisan", "queue:work"]
 ```
-
