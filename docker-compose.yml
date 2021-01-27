@@ -51,6 +51,7 @@ services:
   nodejs:
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
     image: node:${NODEJS_VERSION:-15.5-alpine}
+    user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
       - ./www:/srv/www:delegated
     working_dir: /srv/www
