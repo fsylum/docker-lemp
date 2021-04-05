@@ -80,13 +80,16 @@ docker-compose up -d
 
 ## Miscellaneous
 
-For Laravel-specific site, make sure to comment out the `worker` service in the `docker-compose.yml`. This is currently using multi-stage Docker build to run a separate instance of `php` service that specifically run the `artisan queue:work` command inside the container.
+### Laravel specific configuration
 
-You'll also need to comment out the last section in the file `docker/php/Dockerfile`
+For Laravel-specific site, please follow these steps to enable queue worker and cron scheduler.
 
-```php
-# Enable this section for Laravel
-#FROM php AS worker
+1. Uncomment the `scheduler` service in the `docker-compose.yml`. Make sure to also check the `container` value in the `docker/scheduler/config.ini` to match your Docker configuration.
+2. Uncomment the `worker` service in the `docker-compose.yml`. This is currently using multi-stage Docker build to run a separate instance of `php` service that specifically run the `artisan queue:work` command inside the container.
+3. Uncomment the last two lines in the `docker/php/Dockerfile` to enable a separate worker service.
 
-#CMD ["php", "/srv/www/artisan", "queue:work"]
-```
+## Troubleshooting
+
+### Getting error `the input device is not a TTY.  If you are using mintty, try prefixing the command with 'winpty' when running docker-compose exec <container> sh`
+
+If you're running the command in the Git bash, you might need to prefix `winpty` to all the commands you want to run. For this example, you can run it by `winpty docker-compose exec <container> sh` instead.
