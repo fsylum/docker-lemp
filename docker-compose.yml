@@ -50,7 +50,7 @@ services:
 
   nodejs:
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
-    image: node:${NODEJS_VERSION:-15.13-alpine}
+    image: node:${NODEJS_VERSION:-16.2-alpine}
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
       - ./www:/srv/www:delegated
@@ -60,7 +60,7 @@ services:
     build:
       args:
         PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
-        COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.12}
+        COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.14}
         MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
       context: ./docker/php
       target: php
@@ -97,7 +97,7 @@ services:
   #  build:
   #    args:
   #      PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
-  #      COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.8}
+  #      COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.14}
   #      MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
   #    context: ./docker/php
   #    target: worker
