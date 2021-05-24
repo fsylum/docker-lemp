@@ -50,6 +50,8 @@ services:
 
   nodejs:
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
+    environment:
+      NPM_CONFIG_CACHE: ${NPM_CONFIG_CACHE:-/tmp/npm}
     image: node:${NODEJS_VERSION:-16.2-alpine}
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
@@ -68,6 +70,8 @@ services:
     depends_on:
       - mailhog
       - mysql
+    environment:
+      COMPOSER_CACHE_DIR: ${COMPOSER_CACHE_DIR:-/tmp/composer}
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
       - ./www:/srv/www:delegated
