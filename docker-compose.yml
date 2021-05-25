@@ -67,7 +67,7 @@ services:
   php:
     build:
       args:
-        PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
+        PHP_VERSION: ${PHP_VERSION:-8.0-fpm-alpine}
         COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.14}
         MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
         USER_ID: ${USER_ID:-1000}
@@ -108,7 +108,7 @@ services:
   #worker:
   #  build:
   #    args:
-  #      PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
+  #      PHP_VERSION: ${PHP_VERSION:-8.0-fpm-alpine}
   #      COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.14}
   #      MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
   #    context: ./docker/php
