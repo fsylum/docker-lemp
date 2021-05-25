@@ -49,9 +49,15 @@ services:
     working_dir: /srv/www
 
   nodejs:
+    build:
+      args:
+        NODEJS_VERSION: ${NODEJS_VERSION:-16.2-alpine}
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+      context: ./docker/nodejs
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
     environment:
-      NPM_CONFIG_CACHE: ${NPM_CONFIG_CACHE:-/tmp/npm}
+      NPM_CONFIG_CACHE: /.config/npm
     image: node:${NODEJS_VERSION:-16.2-alpine}
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
@@ -64,6 +70,8 @@ services:
         PHP_VERSION: ${PHP_VERSION:-7.4-fpm-alpine}
         COMPOSER_VERSION: ${COMPOSER_VERSION:-2.0.14}
         MHSENDMAIL_VERSION: ${MHSENDMAIL_VERSION:-0.2.0}
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
       context: ./docker/php
       target: php
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-php
@@ -71,7 +79,7 @@ services:
       - mailhog
       - mysql
     environment:
-      COMPOSER_CACHE_DIR: ${COMPOSER_CACHE_DIR:-/tmp/composer}
+      COMPOSER_HOME: /.config/composer
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
       - ./www:/srv/www:delegated
