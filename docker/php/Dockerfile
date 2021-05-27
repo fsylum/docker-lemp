@@ -16,7 +16,9 @@ RUN curl -Lo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/g
 RUN curl -Lo /usr/local/bin/mhsendmail https://github.com/mailhog/mhsendmail/releases/download/v"$MHSENDMAIL_VERSION"/mhsendmail_linux_amd64 && chmod +x /usr/local/bin/mhsendmail
 RUN mkdir -p /.config/composer
 RUN mkdir -p /.config/psysh
+RUN mkdir -p /.config/wp-cli
 RUN chown -R $USER_ID:$GROUP_ID /.config/composer
+RUN chown -R $USER_ID:$GROUP_ID /.config/wp-cli
 RUN chown -R $USER_ID:$GROUP_ID /.config/psysh
 
 COPY stubs/php.ini /usr/local/etc/php/conf.d/99-custom.ini
