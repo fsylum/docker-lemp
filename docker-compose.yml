@@ -80,7 +80,6 @@ services:
       - mysql
     environment:
       COMPOSER_HOME: /.config/composer
-      WP_CLI_CACHE_DIR: /.config/wp-cli
     user: "${USER_ID:-1000}:${GROUP_ID:-1000}"
     volumes:
       - ./www:/srv/www:delegated
