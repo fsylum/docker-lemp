@@ -33,7 +33,7 @@ services:
   nginx:
     build:
       args:
-        - NGINX_VERSION=${NGINX_VERSION:-1.19-alpine}
+        - NGINX_VERSION=${NGINX_VERSION:-1.21-alpine}
         - SITE_NAME=${SITE_NAME:-docker.test}
         - SITE_IS_SECURE=${SITE_IS_SECURE:-true}
         - SITE_TYPE=${SITE_TYPE:-default}
@@ -51,7 +51,7 @@ services:
   nodejs:
     build:
       args:
-        - NODEJS_VERSION=${NODEJS_VERSION:-16.2-alpine}
+        - NODEJS_VERSION=${NODEJS_VERSION:-16.13-alpine}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
       context: ./docker/nodejs
@@ -67,8 +67,8 @@ services:
   php:
     build:
       args:
-        - PHP_VERSION=${PHP_VERSION:-8.0-fpm-alpine}
-        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.0.14}
+        - PHP_VERSION=${PHP_VERSION:-8.1-fpm-alpine}
+        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.2.4}
         - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
