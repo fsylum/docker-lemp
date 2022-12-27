@@ -9,7 +9,7 @@ ARG GROUP_ID
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN apk --update --no-cache add jpegoptim optipng pngquant gifsicle
+RUN apk --update --no-cache add jpegoptim optipng pngquant gifsicle less
 RUN install-php-extensions bcmath exif gd gettext intl json ldap mysqli odbc pcntl pdo pdo_mysql pdo_pgsql pdo_sqlite pgsql pspell readline redis simplexml soap spl standard xmlrpc zip
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version="$COMPOSER_VERSION"
 RUN curl -Lo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x /usr/local/bin/wp
