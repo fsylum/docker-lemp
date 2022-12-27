@@ -51,14 +51,14 @@ services:
   nodejs:
     build:
       args:
-        - NODEJS_VERSION=${NODEJS_VERSION:-16.16-alpine}
+        - NODEJS_VERSION=${NODEJS_VERSION:-18.12-alpine}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
       context: ./docker/nodejs
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
     environment:
       - NPM_CONFIG_CACHE=/.config/npm
-    image: node:${NODEJS_VERSION:-16.16-alpine}
+    image: node:${NODEJS_VERSION:-18.12-alpine}
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
       - ./www:/srv/www:delegated
@@ -67,8 +67,8 @@ services:
   php:
     build:
       args:
-        - PHP_VERSION=${PHP_VERSION:-8.1-fpm-alpine}
-        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.3.10}
+        - PHP_VERSION=${PHP_VERSION:-8.2-fpm-alpine}
+        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.5.1}
         - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
@@ -108,8 +108,8 @@ services:
   # worker:
   #  build:
   #    args:
-  #      - PHP_VERSION=${PHP_VERSION:-8.0-fpm-alpine}
-  #      - COMPOSER_VERSION=${COMPOSER_VERSION:-2.3.10}
+  #      - PHP_VERSION=${PHP_VERSION:-8.2-fpm-alpine}
+  #      - COMPOSER_VERSION=${COMPOSER_VERSION:-2.5.1}
   #      - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
   #      - USER_ID=${USER_ID:-1000}
   #      - GROUP_ID=${GROUP_ID:-1000}
