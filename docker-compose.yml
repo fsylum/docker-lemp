@@ -12,18 +12,19 @@ services:
     image: memcached:${MEMCACHED_VERSION:-1.6-alpine}
 
   mysql:
-    command: [
-      '--default_authentication_plugin=mysql_native_password',
-      '--character-set-server=${MYSQL_ENCODING:-utf8mb4}',
-      '--collation-server=${MYSQL_COLLATION:-utf8mb4_unicode_ci}'
-    ]
+    command:
+      [
+        "--default_authentication_plugin=mysql_native_password",
+        "--character-set-server=${MYSQL_ENCODING:-utf8mb4}",
+        "--collation-server=${MYSQL_COLLATION:-utf8mb4_unicode_ci}",
+      ]
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-docker}
       - MYSQL_USER=${MYSQL_USER:-docker}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-password}
-    image: mysql:${MYSQL_VERSION:-8.0}
+    image: mysql:${MYSQL_VERSION:-8.3}
     ports:
       - ${MYSQL_PORT:-3306}:3306
     volumes:
@@ -33,7 +34,7 @@ services:
   nginx:
     build:
       args:
-        - NGINX_VERSION=${NGINX_VERSION:-1.23-alpine}
+        - NGINX_VERSION=${NGINX_VERSION:-1.25-alpine}
         - SITE_NAME=${SITE_NAME:-docker.test}
         - SITE_IS_SECURE=${SITE_IS_SECURE:-true}
         - SITE_TYPE=${SITE_TYPE:-default}
@@ -51,14 +52,14 @@ services:
   nodejs:
     build:
       args:
-        - NODEJS_VERSION=${NODEJS_VERSION:-18.12-alpine}
+        - NODEJS_VERSION=${NODEJS_VERSION:-20.11-alpine}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
       context: ./docker/nodejs
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
     environment:
       - NPM_CONFIG_CACHE=/.config/npm
-    image: node:${NODEJS_VERSION:-18.12-alpine}
+    image: node:${NODEJS_VERSION:-20.11-alpine}
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
       - ./www:/srv/www:delegated
@@ -67,8 +68,8 @@ services:
   php:
     build:
       args:
-        - PHP_VERSION=${PHP_VERSION:-8.2-fpm-alpine}
-        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.5.1}
+        - PHP_VERSION=${PHP_VERSION:-8.3-fpm-alpine}
+        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.6.6}
         - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
         - USER_ID=${USER_ID:-1000}
         - GROUP_ID=${GROUP_ID:-1000}
@@ -86,13 +87,9 @@ services:
     working_dir: /srv/www
 
   redis:
-    command: [
-      'redis-server',
-      '--appendonly',
-      'yes',
-    ]
+    command: ["redis-server", "--appendonly", "yes"]
     container_name: ${COMPOSE_PROJECT_NAME:-docker}-redis
-    image: redis:${REDIS_VERSION:-7.0-alpine}
+    image: redis:${REDIS_VERSION:-7.2-alpine}
     volumes:
       - redisdata:/data
 
@@ -108,8 +105,8 @@ services:
   # worker:
   #  build:
   #    args:
-  #      - PHP_VERSION=${PHP_VERSION:-8.2-fpm-alpine}
-  #      - COMPOSER_VERSION=${COMPOSER_VERSION:-2.5.1}
+  #      - PHP_VERSION=${PHP_VERSION:-8.3-fpm-alpine}
+  #      - COMPOSER_VERSION=${COMPOSER_VERSION:-2.6.6}
   #      - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
   #      - USER_ID=${USER_ID:-1000}
   #      - GROUP_ID=${GROUP_ID:-1000}
