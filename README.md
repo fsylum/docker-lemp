@@ -11,7 +11,7 @@ This setup comes with eight services out of the box.
 * Scheduler  - based on [mcuadros/ofelia](https://github.com/mcuadros/ofelia)
 * Redis
 * Memcached
-* Mailhog
+* Mailpit
 
 Software available within `php` service:
 
@@ -37,7 +37,7 @@ The `.env.sample` file is heavily commented which should be enough to get starte
 * Ideally `COMPOSE_PROJECT_NAME` is set to something unique to differentiate between multiple projects.
 * A few ports are exposed by default for (see configuration keys ended with `_PORT`):
     * Nginx (both HTTP and HTTPS connection)
-    * Mailhog (Web UI)
+    * Mailpit (Web UI)
     * MySQL
 * Any versions listed on Docker Hub technically are supported, but the `alpine` specific version is preferable due to smaller image size.
 * The `SITE_NAME` configuration is for the URL of the site without the protocol. You should also add the related entry in the host file of your OS.
@@ -63,7 +63,7 @@ Assuming a configuration with `SITE_NAME` set to `docker.test` and the related e
 
 * http://docker.test - Assuming `NGINX_PORT_UNSECURE` is set to 80, otherwise append the port number to the URL.
 * https://docker.test - If the `SITE_IS_SECURE` configuration set to `true`, assuming `NGINX_PORT_SECURE` is set to 443, otherwise append the port number to the URL.
-* http://docker.test:8025 - Mailhog UI, assuming the `MAILHOG_PORT` is set to `8025`.
+* http://docker.test:8025 - Mailpit UI, assuming the `MAILPIT_PORT` is set to `8025`.
 
 ## Accessing the database
 
