@@ -2,3 +2,4 @@
 .idea
 .env
 *.bak
+/docker/nginx/certs
