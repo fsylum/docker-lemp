@@ -29,6 +29,11 @@ Software available within `php` service:
 * Configure the setup (see **Configuration** section for a more detailed information).
 * Run `docker compose up -d` (see **Usage** section for a more detailed information).
 * Add new entry in your OS host file based on your `SITE_URL` value.
+* Generate a new SSL certs using `mkcert` via:
+
+```
+mkcert -cert-file docker/nginx/certs/default.crt -key-file docker/nginx/certs/default.key <SITE_URL>
+```
 
 ## Configuration
 
