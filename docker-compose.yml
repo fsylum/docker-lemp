@@ -1,4 +1,14 @@
 services:
+  mailpit:
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-mailpit
+    image: axllent/mailpit:${MAILPIT_VERSION:-1.22.3}
+    ports:
+      - ${MAILPIT_WEB_PORT:-8025}:8025
+      - ${MAILPIT_SMTP_PORT:-1025}:1025
+    restart: unless-stopped
+    volumes:
+      - mailpitdata:/data
+
   memcached:
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-memcached
     image: memcached:${MEMCACHED_VERSION:-1.6-alpine}
@@ -37,7 +47,7 @@ services:
       - ./www:/srv/www
       - ./logs/nginx:/var/log/nginx
     working_dir: /srv/www
-    
+
   nodejs:
     build:
       args:
@@ -59,12 +69,14 @@ services:
       args:
         - PHP_VERSION
         - COMPOSER_VERSION
+        - MAILPIT_VERSION
         - USER_ID
         - GROUP_ID
         - SITE_TYPE
       context: ./docker/php
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-php
     depends_on:
+      - mailpit
       - memcached
       - mysql
       - redis
@@ -114,5 +126,6 @@ services:
   #  working_dir: /srv/www
 
 volumes:
+  mailpitdata:
   mysqldata:
   redisdata:
