@@ -1,23 +1,25 @@
-ARG PHP_VERSION
+ARG PHP_VERSION=8.4
 
-FROM php:$PHP_VERSION AS php
+FROM php:$PHP_VERSION-fpm-alpine
 
-ARG COMPOSER_VERSION
-ARG USER_ID
-ARG GROUP_ID
+ARG COMPOSER_VERSION=2.8.5
+ARG USER_ID=1000
+ARG GROUP_ID=1000
+ARG SITE_TYPE=default
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
-RUN apk --update --no-cache add jpegoptim optipng pngquant gifsicle less
+RUN apk --update --no-cache add jpegoptim optipng pngquant gifsicle
 RUN install-php-extensions bcmath exif gd gettext intl json ldap mysqli odbc pcntl pdo pdo_mysql pdo_pgsql pdo_sqlite pgsql pspell readline redis simplexml soap spl standard xmlrpc zip
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version="$COMPOSER_VERSION"
-#RUN curl -Lo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && chmod +x /usr/local/bin/wp
 RUN mkdir -p /.config/composer
-RUN mkdir -p /.config/psysh
-RUN mkdir -p /.wp-cli
 RUN chown -R $USER_ID:$GROUP_ID /.config/composer
-RUN chown -R $USER_ID:$GROUP_ID /.config/psysh
-RUN chown -R $USER_ID:$GROUP_ID /.wp-cli
+RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then curl -Lo /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar; fi
+RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then chmod +x /usr/local/bin/wp; fi
+RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then mkdir -p /.wp-cli; fi
+RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then chown -R $USER_ID:$GROUP_ID /.wp-cli; fi
+RUN if [[ "$SITE_TYPE" == "laravel" ]] ; then mkdir -p /.config/psysh; fi
+RUN if [[ "$SITE_TYPE" == "laravel" ]] ; then chown -R $USER_ID:$GROUP_ID /psysh; fi
 
 COPY stubs/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 

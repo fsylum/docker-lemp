@@ -1,12 +1,6 @@
 services:
-#  mailhog:
-#    container_name: ${COMPOSE_PROJECT_NAME:-docker}-mailhog
-#    image: mailhog/mailhog:latest
-#    ports:
-#      - ${MAILHOG_PORT:-8025}:8025
-
   memcached:
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-memcached
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-memcached
     image: memcached:${MEMCACHED_VERSION:-1.6-alpine}
 
   mysql:
@@ -14,7 +8,7 @@ services:
       '--character-set-server=${MYSQL_ENCODING:-utf8mb4}',
       '--collation-server=${MYSQL_COLLATION:-utf8mb4_unicode_ci}'
     ]
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-mysql
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-docker}
@@ -24,59 +18,62 @@ services:
     ports:
       - ${MYSQL_PORT:-3306}:3306
     volumes:
-      - mysqldata:/var/lib/mysql:delegated
-      - ./www:/srv/www:delegated
+      - mysqldata:/var/lib/mysql
 
   nginx:
     build:
       args:
-        - NGINX_VERSION=${NGINX_VERSION:-1.27-alpine}
-        - SITE_URL=${SITE_NAME:-docker.test}
-        - SITE_TYPE=${SITE_TYPE:-default}
+        - NGINX_VERSION
+        - SITE_URL
+        - SITE_TYPE
       context: ./docker/nginx
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-nginx
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-nginx
     depends_on:
       - php
     ports:
       - ${NGINX_PORT_UNSECURE:-80}:80
       - ${NGINX_PORT_SECURE:-443}:443
     volumes:
-      - ./www:/srv/www:delegated
+      - ./www:/srv/www
+      - ./logs/nginx:/var/log/nginx
     working_dir: /srv/www
-
+    
   nodejs:
     build:
       args:
-        - NODEJS_VERSION=${NODEJS_VERSION:-22.14-alpine}
-        - USER_ID=${USER_ID:-1000}
-        - GROUP_ID=${GROUP_ID:-1000}
+        - NODEJS_VERSION
+        - USER_ID
+        - GROUP_ID
       context: ./docker/nodejs
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-nodejs
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-nodejs
     environment:
       - NPM_CONFIG_CACHE=/.config/npm
     image: node:${NODEJS_VERSION:-22.14-alpine}
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
-      - ./www:/srv/www:delegated
+      - ./www:/srv/www
     working_dir: /srv/www
 
   php:
     build:
       args:
-        - PHP_VERSION=${PHP_VERSION:-8.4-fpm-alpine}
-        - COMPOSER_VERSION=${COMPOSER_VERSION:-2.8.5}
-        - USER_ID=${USER_ID:-1000}
-        - GROUP_ID=${GROUP_ID:-1000}
+        - PHP_VERSION
+        - COMPOSER_VERSION
+        - USER_ID
+        - GROUP_ID
+        - SITE_TYPE
       context: ./docker/php
-      target: php
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-php
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-php
     depends_on:
+      - memcached
       - mysql
+      - redis
     environment:
       - COMPOSER_HOME=/.config/composer
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
-      - ./www:/srv/www:delegated
+      - ./www:/srv/www
+      - ./logs/php:/var/log/php
     working_dir: /srv/www
 
   redis:
@@ -85,13 +82,13 @@ services:
       '--appendonly',
       'yes',
     ]
-    container_name: ${COMPOSE_PROJECT_NAME:-docker}-redis
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-redis
     image: redis:${REDIS_VERSION:-7.0-alpine}
     volumes:
       - redisdata:/data
 
   # scheduler:
-  #  container_name: ${COMPOSE_PROJECT_NAME:-docker}-scheduler
+  #  container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-scheduler
   #  depends_on:
   #    - php
   #  image: mcuadros/ofelia:latest
@@ -109,7 +106,7 @@ services:
   #      - GROUP_ID=${GROUP_ID:-1000}
   #    context: ./docker/php
   #    target: worker
-  #  container_name: ${COMPOSE_PROJECT_NAME:-docker}-worker
+  #  container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-worker
   #  depends_on:
   #    - php
   #  volumes:
