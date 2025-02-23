@@ -99,32 +99,6 @@ services:
     volumes:
       - redisdata:/data
 
-  # scheduler:
-  #  container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-scheduler
-  #  depends_on:
-  #    - php
-  #  image: mcuadros/ofelia:latest
-  #  volumes:
-  #    - /var/run/docker.sock:/var/run/docker.sock:ro
-  #    - ./docker/scheduler/config.ini:/etc/ofelia/config.ini
-
-  # worker:
-  #  build:
-  #    args:
-  #      - PHP_VERSION=${PHP_VERSION:-8.2-fpm-alpine}
-  #      - COMPOSER_VERSION=${COMPOSER_VERSION:-2.5.1}
-  #      - MHSENDMAIL_VERSION=${MHSENDMAIL_VERSION:-0.2.0}
-  #      - USER_ID=${USER_ID:-1000}
-  #      - GROUP_ID=${GROUP_ID:-1000}
-  #    context: ./docker/php
-  #    target: worker
-  #  container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-worker
-  #  depends_on:
-  #    - php
-  #  volumes:
-  #    - ./www:/srv/www:delegated
-  #  working_dir: /srv/www
-
 volumes:
   mailpitdata:
   mysqldata:
