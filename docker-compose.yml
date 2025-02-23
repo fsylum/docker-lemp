@@ -1,7 +1,7 @@
 services:
   mailpit:
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-mailpit
-    image: axllent/mailpit:${MAILPIT_VERSION:-1.22.3}
+    image: axllent/mailpit:v${MAILPIT_VERSION:-1.22.3}
     ports:
       - ${MAILPIT_WEB_PORT:-8025}:8025
       - ${MAILPIT_SMTP_PORT:-1025}:1025
