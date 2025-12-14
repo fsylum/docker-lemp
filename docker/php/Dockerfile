@@ -10,6 +10,9 @@ ARG SITE_TYPE=default
 
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
+ENV COMPOSER_HOME=/.config/composer
+ENV PATH="$COMPOSER_HOME/vendor/bin:$PATH"
+
 RUN apk --update --no-cache add jpegoptim optipng pngquant gifsicle
 RUN install-php-extensions bcmath exif gd gettext intl json ldap mysqli odbc pcntl pdo pdo_mysql pdo_pgsql pdo_sqlite pgsql pspell readline redis simplexml soap spl standard xmlrpc zip
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=$COMPOSER_VERSION
@@ -21,7 +24,7 @@ RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then chmod +x /usr/local/bin/wp; fi
 RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then mkdir -p /.wp-cli; fi
 RUN if [[ "$SITE_TYPE" == "wordpress" ]] ; then chown -R $USER_ID:$GROUP_ID /.wp-cli; fi
 RUN if [[ "$SITE_TYPE" == "laravel" ]] ; then mkdir -p /.config/psysh; fi
-RUN if [[ "$SITE_TYPE" == "laravel" ]] ; then chown -R $USER_ID:$GROUP_ID /psysh; fi
+RUN if [[ "$SITE_TYPE" == "laravel" ]] ; then chown -R $USER_ID:$GROUP_ID /.config/psysh; fi
 
 COPY stubs/php.ini /usr/local/etc/php/conf.d/99-custom.ini
 
