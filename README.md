@@ -86,3 +86,20 @@ docker compose up -d
 ### Getting error `the input device is not a TTY.  If you are using mintty, try prefixing the command with 'winpty' when running docker compose exec <container> sh`
 
 If you're running the command in the Git bash, you might need to prefix `winpty` to all the commands you want to run. For this example, you can run it by `winpty docker compose exec <container> sh` instead.
+
+### Specific Vite config for Laravel
+
+Add this to the `vite.config.js` file
+
+```
+server: {
+    https: {
+        key: fs.readFileSync(path.resolve(__dirname, '../docker/nginx/certs/default.key')),
+        cert: fs.readFileSync(path.resolve(__dirname, '../docker/nginx/certs/default.crt')),
+    },
+    host: true,
+    port: 5173,
+},
+```
+
+Now you can run `docker compose run --rm -p 5173:5173 nodejs npm run dev`.

@@ -62,6 +62,7 @@ services:
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
       - ./www:/srv/www
+      - ./docker/nginx/certs:/srv/docker/nginx/certs
     working_dir: /srv/www
 
   php:
