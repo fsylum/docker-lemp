@@ -42,6 +42,24 @@ services:
       - ./logs/php:/var/log/php
       - ./docker/php/stubs/php.prod.ini:/usr/local/etc/php/conf.d/99-prod.ini
 
+  horizon:
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  scheduler:
+    mem_limit: 128m
+    cpus: 0.25
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   redis:
     mem_limit: 64m
     cpus: 0.25

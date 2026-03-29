@@ -1,22 +1,20 @@
-A simple Docker-based LEMP stack for local web development using Docker Compose.
+A Docker-based LEMP stack for Laravel development and production deployment using Docker Compose.
 
 ## What's Included
-
-This setup comes with eight services out of the box.
 
 * Nginx
 * PHP
 * MySQL
 * Node.js
-* Scheduler  - based on [mcuadros/ofelia](https://github.com/mcuadros/ofelia)
+* Horizon (queue worker)
+* Scheduler (cron)
 * Redis
 * Memcached
-* Mailpit
+* Mailpit (dev only)
 
 Software available within `php` service:
 
 * Composer
-* WP-CLI
 
 ## Requirement
 

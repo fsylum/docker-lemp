@@ -56,7 +56,6 @@ services:
       args:
         - NGINX_VERSION
         - SITE_URL
-        - SITE_TYPE
       context: ./docker/nginx
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-nginx
     restart: unless-stopped
@@ -99,7 +98,6 @@ services:
         - MAILPIT_VERSION
         - USER_ID
         - GROUP_ID
-        - SITE_TYPE
       context: ./docker/php
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-php
     stop_grace_period: 35s
@@ -120,6 +118,53 @@ services:
       - COMPOSER_HOME=/.config/composer
     networks:
       - frontend
+      - backend
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./www:/srv/www
+      - ./logs/php:/var/log/php
+    working_dir: /srv/www
+
+  horizon:
+    build:
+      context: ./docker/php
+      args:
+        - PHP_VERSION
+        - COMPOSER_VERSION
+        - MAILPIT_VERSION
+        - USER_ID
+        - GROUP_ID
+    command: php /srv/www/artisan horizon
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-horizon
+    restart: unless-stopped
+    stop_grace_period: 10s
+    depends_on:
+      php:
+        condition: service_healthy
+    networks:
+      - backend
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./www:/srv/www
+      - ./logs/php:/var/log/php
+    working_dir: /srv/www
+
+  scheduler:
+    build:
+      context: ./docker/php
+      args:
+        - PHP_VERSION
+        - COMPOSER_VERSION
+        - MAILPIT_VERSION
+        - USER_ID
+        - GROUP_ID
+    command: sh -c 'while true; do php /srv/www/artisan schedule:run --no-interaction; sleep 60; done'
+    container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-scheduler
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    networks:
       - backend
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
