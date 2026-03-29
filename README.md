@@ -27,7 +27,7 @@ Software available within `php` service:
 * Clone the repository.
 * Copy `.env.sample` to `.env`.
 * Configure the setup (see **Configuration** section for a more detailed information).
-* Run `docker compose up -d` (see **Usage** section for a more detailed information).
+* Run `docker compose --profile dev up -d` (see **Usage** section for a more detailed information).
 * Add new entry in your OS host file based on your `SITE_URL` value.
 * Generate a new SSL certs using `mkcert` via:
 
@@ -51,7 +51,7 @@ The `.env.sample` file is heavily commented which should be enough to get starte
 
 Once the configuration is done, all of standard Docker Compose commands can be used for the project.
 
-* To start all services in detached mode, run `docker compose up -d`.
+* To start all services in detached mode, run `docker compose --profile dev up -d`. The `dev` profile includes dev-only services like Mailpit.
 * To stop all services, run `docker compose down`.
 * To inspect all running services, run `docker compose ps`.
 * You can also start/stop each services manually, by running `docker compose start <service>` and `docker compose stop <service>`.
@@ -80,6 +80,167 @@ All files within the `docker` directory can be edited to suit your requirement, 
 docker compose build <service-name>
 docker compose up -d
 ```
+
+## Production Deployment
+
+This setup supports multi-site production deployment on a single VPS using Cloudflare Tunnel and Traefik as a shared reverse proxy.
+
+### Architecture
+
+```
+Internet → Cloudflare (SSL/CDN/DDoS protection)
+         → Cloudflare Tunnel (encrypted)
+         → cloudflared container on VPS
+         → Traefik (routes by hostname)
+           ├→ project-1/nginx → php
+           ├→ project-2/nginx → php
+           └→ project-3/nginx → php
+```
+
+### Initial VPS Setup (once per server)
+
+#### 1. Create a Cloudflare Tunnel
+
+* Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com) → Networks → Tunnels → Create a tunnel.
+* Name the tunnel (e.g. `my-vps`).
+* Copy the tunnel token.
+
+#### 2. Start the Traefik stack
+
+```
+cd docker/traefik
+cp .env.sample .env
+```
+
+Set the `CLOUDFLARE_TUNNEL_TOKEN` in `.env` to the token from step 1, then start the stack:
+
+```
+docker compose up -d
+```
+
+This creates the shared `proxy` network that all projects will join.
+
+#### 3. Configure tunnel hostnames
+
+In the Cloudflare tunnel settings, add a **public hostname** for each site you want to host:
+
+| Public hostname | Service |
+|----------------|---------|
+| `example.com` | `https://traefik:443` |
+| `www.example.com` | `https://traefik:443` |
+| `foobar.com` | `https://traefik:443` |
+
+For each hostname, enable **No TLS Verify** under the TLS settings (the origin uses self-signed certificates internally).
+
+#### 4. DNS
+
+Each domain must be added to Cloudflare. The tunnel will create CNAME records automatically, or you can set them manually:
+
+```
+example.com     → CNAME → <tunnel-id>.cfargotunnel.com (Proxied)
+www.example.com → CNAME → <tunnel-id>.cfargotunnel.com (Proxied)
+```
+
+### Per-Site Deployment
+
+For each site, clone this repository and configure it:
+
+```
+git clone <repo-url> /srv/example.com
+cd /srv/example.com
+cp .env.sample .env
+```
+
+Set the `.env` values for production:
+
+```
+COMPOSE_PROJECT_NAME=example
+SITE_URL=example.com
+BIND_ADDRESS=127.0.0.1
+```
+
+`COMPOSE_PROJECT_NAME` must be unique across all projects on the VPS. `BIND_ADDRESS=127.0.0.1` ensures ports are not publicly accessible (traffic goes through Traefik/tunnel only).
+
+Start the site with the production overlay:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+The production overlay (`docker-compose.prod.yml`) adds Traefik routing labels to nginx so that Traefik can route requests for `SITE_URL` to this project's nginx container.
+
+### Resource Limits
+
+The production overlay (`docker-compose.prod.yml`) includes resource limits tailored for a 2 CPU / 4GB RAM VPS running a single site:
+
+| Service | Memory | CPU |
+|---------|--------|-----|
+| MySQL | 512m | 0.5 |
+| PHP | 256m | 0.5 |
+| Nginx | 128m | 0.25 |
+| Redis | 64m | 0.25 |
+| Memcached | 64m | 0.25 |
+| **Total** | **~1 GB** | **1.75** |
+
+This leaves headroom for the OS, Traefik, cloudflared, and a second site. If running on a larger VPS or fewer sites, scale up MySQL and PHP first — they benefit the most. For a 4 CPU / 8GB VPS, consider doubling the values above.
+
+### Adding More Sites
+
+Repeat the **Per-Site Deployment** steps for each additional site. Then add the corresponding public hostname(s) in the Cloudflare tunnel settings pointing to `https://traefik:443`.
+
+### Log Rotation
+
+Docker container logs (stdout/stderr) are automatically rotated in production via the `json-file` driver (10MB max, 3 files retained).
+
+For volume-mounted application logs (Nginx access/error, PHP slow log, MySQL slow query log), add a host-level logrotate config:
+
+```
+sudo tee /etc/logrotate.d/docker-lemp << 'EOF'
+/srv/*/logs/nginx/*.log /srv/*/logs/php/*.log /srv/*/logs/mysql/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    sharedscripts
+    postrotate
+        for dir in /srv/*/; do
+            project=$(basename "$dir")
+            docker compose -f "$dir/docker-compose.yml" exec -T nginx nginx -s reopen 2>/dev/null || true
+        done
+    endscript
+}
+EOF
+```
+
+### Database Backups
+
+A backup script is included at `docker/scripts/backup-db.sh`. It dumps the MySQL database to a compressed file with 7-day retention.
+
+```
+chmod +x docker/scripts/backup-db.sh
+
+# Run manually
+./docker/scripts/backup-db.sh /srv/example.com
+
+# Set up a daily cron job (3 AM)
+crontab -e
+0 3 * * * /srv/example.com/docker/scripts/backup-db.sh /srv/example.com >> /var/log/docker-lemp-backup.log 2>&1
+```
+
+Backups are stored in `./backups/` and excluded from version control.
+
+### Docker Cleanup
+
+Schedule a weekly cleanup to reclaim disk space from dangling images and stopped containers:
+
+```
+crontab -e
+0 4 * * 0 docker system prune -f --filter "until=168h" >> /var/log/docker-prune.log 2>&1
+```
+
+This removes unused resources older than 7 days. Volumes are **not** pruned to protect database data.
 
 ## Troubleshooting
 

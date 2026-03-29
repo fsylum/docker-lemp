@@ -1,0 +1,57 @@
+services:
+  memcached:
+    mem_limit: 64m
+    cpus: 0.25
+
+  mysql:
+    mem_limit: 512m
+    cpus: 0.5
+    volumes:
+      - mysqldata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/99-custom.cnf:ro
+      - ./logs/mysql:/var/log/mysql
+
+  nginx:
+    mem_limit: 128m
+    cpus: 0.25
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:-docker-lemp}.rule=Host(`${SITE_URL:-docker-lemp.test}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:-docker-lemp}.entrypoints=websecure
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:-docker-lemp}.loadbalancer.server.port=443
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:-docker-lemp}.loadbalancer.server.scheme=https
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - frontend
+      - proxy
+
+  php:
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    volumes:
+      - ./www:/srv/www
+      - ./logs/php:/var/log/php
+      - ./docker/php/stubs/php.prod.ini:/usr/local/etc/php/conf.d/99-prod.ini
+
+  redis:
+    mem_limit: 64m
+    cpus: 0.25
+    command: [
+      'redis-server',
+      '--appendonly', 'yes',
+      '--maxmemory', '48mb',
+      '--maxmemory-policy', 'allkeys-lru',
+    ]
+
+networks:
+  proxy:
+    external: true

@@ -5,13 +5,25 @@ services:
     ports:
       - ${MAILPIT_WEB_PORT:-8025}:8025
       - ${MAILPIT_SMTP_PORT:-1025}:1025
+    networks:
+      - backend
+    profiles:
+      - dev
     restart: unless-stopped
     volumes:
       - mailpitdata:/data
 
   memcached:
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-memcached
+    healthcheck:
+      test: ["CMD-SHELL", "echo stats | nc localhost 11211 | grep pid"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     image: memcached:${MEMCACHED_VERSION:-1.6-alpine}
+    networks:
+      - backend
+    restart: unless-stopped
 
   mysql:
     command: [
@@ -19,14 +31,23 @@ services:
       '--collation-server=${MYSQL_COLLATION:-utf8mb4_unicode_ci}'
     ]
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-mysql
+    stop_grace_period: 30s
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-password}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-docker}
       - MYSQL_USER=${MYSQL_USER:-docker}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-password}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     image: mysql:${MYSQL_VERSION:-8.4}
+    networks:
+      - backend
+    restart: unless-stopped
     ports:
-      - ${MYSQL_PORT:-3306}:3306
+      - ${BIND_ADDRESS:-0.0.0.0}:${MYSQL_PORT:-3306}:3306
     volumes:
       - mysqldata:/var/lib/mysql
 
@@ -38,11 +59,16 @@ services:
         - SITE_TYPE
       context: ./docker/nginx
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-nginx
+    restart: unless-stopped
+    stop_grace_period: 10s
     depends_on:
-      - php
+      php:
+        condition: service_healthy
     ports:
-      - ${NGINX_PORT_UNSECURE:-80}:80
-      - ${NGINX_PORT_SECURE:-443}:443
+      - ${BIND_ADDRESS:-0.0.0.0}:${NGINX_PORT_UNSECURE:-80}:80
+      - ${BIND_ADDRESS:-0.0.0.0}:${NGINX_PORT_SECURE:-443}:443
+    networks:
+      - frontend
     volumes:
       - ./www:/srv/www
       - ./logs/nginx:/var/log/nginx
@@ -76,13 +102,25 @@ services:
         - SITE_TYPE
       context: ./docker/php
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-php
+    stop_grace_period: 35s
+    healthcheck:
+      test: ["CMD-SHELL", "SCRIPT_NAME=/ping SCRIPT_FILENAME=/ping REQUEST_METHOD=GET cgi-fcgi -bind -connect 127.0.0.1:9000 | grep pong"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
     depends_on:
-      - mailpit
-      - memcached
-      - mysql
-      - redis
+      memcached:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - COMPOSER_HOME=/.config/composer
+    networks:
+      - frontend
+      - backend
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
     volumes:
       - ./www:/srv/www
@@ -96,9 +134,22 @@ services:
       'yes',
     ]
     container_name: ${COMPOSE_PROJECT_NAME:-docker-lemp}-redis
+    stop_grace_period: 10s
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     image: redis:${REDIS_VERSION:-7.0-alpine}
+    networks:
+      - backend
+    restart: unless-stopped
     volumes:
       - redisdata:/data
+
+networks:
+  frontend:
+  backend:
 
 volumes:
   mailpitdata:

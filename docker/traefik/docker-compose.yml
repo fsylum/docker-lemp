@@ -1,0 +1,33 @@
+services:
+  cloudflared:
+    command: tunnel run
+    container_name: cloudflared
+    depends_on:
+      - traefik
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    image: cloudflare/cloudflared:latest
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  traefik:
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --entrypoints.websecure.address=:443
+      - --serversTransport.insecureSkipVerify=true
+    container_name: traefik
+    image: traefik:v3.4
+    ports:
+      - 127.0.0.1:443:443
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: proxy
