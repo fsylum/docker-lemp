@@ -17,6 +17,8 @@ services:
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=proxy
       - --entrypoints.websecure.address=:443
+      # Remove this line if using Cloudflare Origin CA certificates.
+      # Only needed for self-signed certs.
       - --serversTransport.insecureSkipVerify=true
     container_name: traefik
     image: traefik:v3.4

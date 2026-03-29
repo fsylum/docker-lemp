@@ -141,7 +141,21 @@ www.example.com → CNAME → <tunnel-id>.cfargotunnel.com (Proxied)
 
 ### Per-Site Deployment
 
-For each site, clone this repository and configure it:
+Each site is a full clone of this repo with its own containers:
+
+```
+/srv/example.com/           ← clone of this repo
+├── .env                    ← Docker config
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── deploy.sh
+├── docker/
+├── logs/
+└── www/                    ← your Laravel app
+    └── .env                ← Laravel config
+```
+
+#### 1. Clone and configure
 
 ```
 git clone <repo-url> /srv/example.com
@@ -154,18 +168,80 @@ Set the `.env` values for production:
 ```
 COMPOSE_PROJECT_NAME=example
 SITE_URL=example.com
+COMPOSE_PROFILES=
 BIND_ADDRESS=127.0.0.1
+MYSQL_DATABASE=example
+MYSQL_USER=example
+MYSQL_PASSWORD=<strong-password>
+MYSQL_ROOT_PASSWORD=<strong-password>
 ```
 
-`COMPOSE_PROJECT_NAME` must be unique across all projects on the VPS. `BIND_ADDRESS=127.0.0.1` ensures ports are not publicly accessible (traffic goes through Traefik/tunnel only).
+`COMPOSE_PROJECT_NAME` must be unique across all projects on the VPS. `BIND_ADDRESS=127.0.0.1` ensures ports are not publicly accessible (traffic goes through Traefik/tunnel only). `COMPOSE_PROFILES` is left empty to exclude dev-only services (Mailpit).
 
-Start the site with the production overlay:
+#### 2. Set up your Laravel app
 
 ```
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+git clone <your-laravel-repo> www
+cp www/.env.example www/.env
 ```
 
-The production overlay (`docker-compose.prod.yml`) adds Traefik routing labels to nginx so that Traefik can route requests for `SITE_URL` to this project's nginx container.
+Configure `www/.env` for production:
+
+```
+APP_ENV=production
+APP_DEBUG=false
+DB_HOST=mysql
+DB_DATABASE=example
+DB_USERNAME=example
+DB_PASSWORD=<strong-password>
+REDIS_HOST=redis
+CACHE_STORE=redis
+SESSION_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
+
+#### 3. SSL certificates
+
+Cloudflare handles public SSL. Internally, Nginx needs a certificate for the Traefik connection. The recommended approach is to use a **Cloudflare Origin CA certificate** (free, 15-year validity, verified by Traefik):
+
+1. Go to Cloudflare dashboard → your domain → SSL/TLS → Origin Server → Create Certificate.
+2. Keep the defaults (RSA, 15 years). Add your domain(s) to the hostnames list.
+3. Save the certificate and private key:
+
+```
+# Paste the certificate into:
+docker/nginx/certs/default.crt
+
+# Paste the private key into:
+docker/nginx/certs/default.key
+```
+
+**Alternative:** If you prefer self-signed certs (simpler but less secure):
+
+```
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+  -keyout docker/nginx/certs/default.key \
+  -out docker/nginx/certs/default.crt \
+  -subj "/CN=example.com"
+```
+
+Note: Self-signed certs require `insecureSkipVerify=true` in the Traefik config (enabled by default).
+
+#### 4. Deploy
+
+```
+./deploy.sh
+```
+
+This builds images, starts services, installs dependencies, runs migrations, caches config, and builds frontend assets. See `deploy.sh` for the full sequence.
+
+For subsequent deployments (code updates):
+
+```
+./deploy.sh update
+```
+
+This pulls the latest code, runs migrations, rebuilds caches and assets, restarts PHP (clears OPcache), and restarts Horizon.
 
 ### Resource Limits
 
@@ -175,12 +251,14 @@ The production overlay (`docker-compose.prod.yml`) includes resource limits tail
 |---------|--------|-----|
 | MySQL | 512m | 0.5 |
 | PHP | 256m | 0.5 |
+| Horizon | 256m | 0.5 |
 | Nginx | 128m | 0.25 |
+| Scheduler | 128m | 0.25 |
 | Redis | 64m | 0.25 |
 | Memcached | 64m | 0.25 |
-| **Total** | **~1 GB** | **1.75** |
+| **Total** | **~1.4 GB** | **2.5** |
 
-This leaves headroom for the OS, Traefik, cloudflared, and a second site. If running on a larger VPS or fewer sites, scale up MySQL and PHP first — they benefit the most. For a 4 CPU / 8GB VPS, consider doubling the values above.
+This leaves headroom for the OS, Traefik, and cloudflared on a 2 CPU / 4GB RAM VPS. If hosting multiple sites, scale the VPS accordingly — each site adds ~1.4 GB. Scale up MySQL, PHP, and Horizon first — they benefit the most.
 
 ### Adding More Sites
 
